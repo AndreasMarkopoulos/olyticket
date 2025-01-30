@@ -4,7 +4,6 @@ require("dotenv").config();
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 const {sendMessage} = require("./telegramBot.js")
-process.env.DEBUG = "puppeteer:*";  // Enables verbose logging for Puppeteer
 
 // --- Data storage for known tickets ---
 // Using /app/data if your Docker container's working directory is /app
