@@ -13,14 +13,18 @@ const DATA_FILENAME = path.join(DATA_DIRECTORY, "known_tickets.json");
 // Load known tickets from JSON file as objects
 function loadKnownTickets() {
     if (fs.existsSync(DATA_FILENAME)) {
-        return JSON.parse(fs.readFileSync(DATA_FILENAME, "utf8"));
+        let fileContents = JSON.parse(fs.readFileSync(DATA_FILENAME, "utf8"))
+        console.log(fileContents)
+        return fileContents;
     }
     return [];
 }
 
 // Save known tickets to JSON file as objects
 function saveKnownTickets(knownTickets) {
+    console.log("Saving known_tickets.json to:", DATA_FILENAME);
     fs.writeFileSync(DATA_FILENAME, JSON.stringify(knownTickets, null, 2));
+    console.log("File saved successfully!");
 }
 
 async function checkForNewTickets(url) {
