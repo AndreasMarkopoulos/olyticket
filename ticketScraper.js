@@ -28,29 +28,30 @@ function saveKnownTickets(knownTickets) {
     console.log("File saved successfully!");
 }
 
-const proxyUrl = "http://3.124.133.93:3128"; // Replace with your proxy IP & Port
+// const proxyUrl = "http://3.124.133.93:3128"; // Replace with your proxy IP & Port
 
 async function checkForNewTickets(url) {
     console.log("Opening browser...");
     const browser = await puppeteer.launch({
         headless: "new",  // Use the new headless mode for better performance
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-        args: [
-            `--proxy-server=${proxyUrl}`,
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
-            "--disable-gpu",
-            "--disable-software-rasterizer",
-            "--disable-extensions",
-            "--disable-background-networking",
-            "--disable-sync",
-            "--disable-default-apps",
-            "--disable-features=TranslateUI",
-            "--no-first-run",
-            "--no-zygote",
-            "--single-process",
-        ],
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        // args: [
+        //     `--proxy-server=${proxyUrl}`,
+        //     "--no-sandbox",
+        //     "--disable-setuid-sandbox",
+        //     "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
+        //     "--disable-gpu",
+        //     "--disable-software-rasterizer",
+        //     "--disable-extensions",
+        //     "--disable-background-networking",
+        //     "--disable-sync",
+        //     "--disable-default-apps",
+        //     "--disable-features=TranslateUI",
+        //     "--no-first-run",
+        //     "--no-zygote",
+        //     "--single-process",
+        // ],
     });
 
     try {
@@ -69,7 +70,7 @@ async function checkForNewTickets(url) {
         const content = await page.content();
         console.log("Extracting content...");
         // Save the page source
-        fs.writeFileSync("/app/data/page.html", content);
+        // fs.writeFileSync("/app/data/page.html", content);
         console.log("Saved page content to /app/data/page.html for debugging.");
 
         const $ = cheerio.load(content);
