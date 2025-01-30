@@ -14,9 +14,7 @@ const DATA_FILENAME = path.join(DATA_DIRECTORY, "known_tickets.json");
 // Load known tickets from JSON file as objects
 function loadKnownTickets() {
     if (fs.existsSync(DATA_FILENAME)) {
-        let fileContents = JSON.parse(fs.readFileSync(DATA_FILENAME, "utf8"))
-        console.log("Known tickets: ",fileContents)
-        return fileContents;
+        return  JSON.parse(fs.readFileSync(DATA_FILENAME, "utf8"));
     }
     return [];
 }
@@ -25,55 +23,32 @@ function loadKnownTickets() {
 function saveKnownTickets(knownTickets) {
     console.log("Saving known_tickets.json to:", DATA_FILENAME);
     fs.writeFileSync(DATA_FILENAME, JSON.stringify(knownTickets, null, 2));
-    console.log("File saved successfully!");
 }
-
-// const proxyUrl = "http://3.124.133.93:3128"; // Replace with your proxy IP & Port
 
 async function checkForNewTickets(url) {
     console.log("Opening browser...");
-    const args = [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-infobars',
-        '--window-position=0,0',
-        '--ignore-certifcate-errors',
-        '--ignore-certifcate-errors-spki-list',
-        '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
-    ];
     const browser = await puppeteer.launch({
         headless: "new",  // Use the new headless mode for better performance
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-        args,
-        // args: [
-        //     `--proxy-server=${proxyUrl}`,
-        //     "--no-sandbox",
-        //     "--disable-setuid-sandbox",
-        //     "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
-        //     "--disable-gpu",
-        //     "--disable-software-rasterizer",
-        //     "--disable-extensions",
-        //     "--disable-background-networking",
-        //     "--disable-sync",
-        //     "--disable-default-apps",
-        //     "--disable-features=TranslateUI",
-        //     "--no-first-run",
-        //     "--no-zygote",
-        //     "--single-process",
-        // ],
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--disable-default-apps",
+            "--disable-features=TranslateUI",
+            "--no-first-run",
+            "--no-zygote",
+            "--single-process",
+        ],
     });
 
     try {
         const page = await browser.newPage();
-        await page.evaluateOnNewDocument(() => {
-            Object.defineProperty(navigator, "webdriver", { get: () => false });
-        });
-        await page.evaluate(() => {
-            setInterval(() => {
-                window.dispatchEvent(new Event('mousemove'));
-                window.dispatchEvent(new Event('scroll'));
-            }, 3000);
-        });
         console.log(`Navigating to URL: ${url}`);
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
@@ -83,16 +58,10 @@ async function checkForNewTickets(url) {
 
         await page.goto(url, { waitUntil: "networkidle2" });
         await page.waitForNetworkIdle();
-        console.log("Page loaded successfully!");
 
         const content = await page.content();
-        console.log("Extracting content...");
-        // Save the page source
-        // fs.writeFileSync("/app/data/page.html", content);
-        console.log("Saved page content to /app/data/page.html for debugging.");
 
         const $ = cheerio.load(content);
-        console.log("Cheerio loaded the HTML!", $);
 
         const foundProducts = [];
         const productSelector = ".product, .productListItem, .clubTemplateSliderProduct";
@@ -112,7 +81,6 @@ async function checkForNewTickets(url) {
                 id
             })
         });
-        console.log("Found products:", foundProducts)
         return foundProducts;
     } catch (error) {
         console.error("Scraping error:", error);
@@ -149,7 +117,6 @@ async function main() {
             sendMessage(ticket)
         }
 
-        // sendEmail(newItems);
         console.log("New tickets detected and message sent.");
     } else {
         console.log("No new tickets. Checked at " + new Date().toLocaleString());
