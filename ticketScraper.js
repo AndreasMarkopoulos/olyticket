@@ -32,10 +32,19 @@ function saveKnownTickets(knownTickets) {
 
 async function checkForNewTickets(url) {
     console.log("Opening browser...");
+    const args = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-infobars',
+        '--window-position=0,0',
+        '--ignore-certifcate-errors',
+        '--ignore-certifcate-errors-spki-list',
+        '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3312.0 Safari/537.36"'
+    ];
     const browser = await puppeteer.launch({
         headless: "new",  // Use the new headless mode for better performance
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        args,
         // args: [
         //     `--proxy-server=${proxyUrl}`,
         //     "--no-sandbox",
@@ -70,7 +79,7 @@ async function checkForNewTickets(url) {
         const content = await page.content();
         console.log("Extracting content...");
         // Save the page source
-        fs.writeFileSync("/app/data/page.html", content);
+        // fs.writeFileSync("/app/data/page.html", content);
         console.log("Saved page content to /app/data/page.html for debugging.");
 
         const $ = cheerio.load(content);
