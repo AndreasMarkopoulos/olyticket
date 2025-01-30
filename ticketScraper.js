@@ -4,6 +4,7 @@ require("dotenv").config();
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 const {sendMessage} = require("./telegramBot.js")
+process.env.DEBUG = "puppeteer:*";  // Enables verbose logging for Puppeteer
 
 // --- Data storage for known tickets ---
 // Using /app/data if your Docker container's working directory is /app
@@ -28,6 +29,7 @@ function saveKnownTickets(knownTickets) {
 }
 
 async function checkForNewTickets(url) {
+    console.log("Opening browser...");
     const browser = await puppeteer.launch({
         headless: "new",  // Use the new headless mode for better performance
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -50,6 +52,7 @@ async function checkForNewTickets(url) {
 
     try {
         const page = await browser.newPage();
+        console.log(`Navigating to URL: ${url}`);
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
@@ -58,10 +61,13 @@ async function checkForNewTickets(url) {
 
         await page.goto(url, { waitUntil: "networkidle2" });
         await page.waitForNetworkIdle();
+        console.log("Page loaded successfully!");
 
         const content = await page.content();
+        console.log("Extracting content...");
+
         const $ = cheerio.load(content);
-        console.log("html content:",$)
+        console.log("Cheerio loaded the HTML!", $);
 
         const foundProducts = [];
         const productSelector = ".product, .productListItem, .clubTemplateSliderProduct";
@@ -83,6 +89,8 @@ async function checkForNewTickets(url) {
         });
         console.log("Found products:", foundProducts)
         return foundProducts;
+    } catch (error) {
+        console.error("Scraping error:", error);
     } finally {
         await browser.close();
     }
