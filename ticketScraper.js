@@ -6,7 +6,9 @@ const cheerio = require("cheerio");
 const {sendMessage} = require("./telegramBot.js")
 
 // --- Data storage for known tickets ---
-const DATA_FILENAME = path.join(__dirname, "known_tickets.json");
+// Using /app/data if your Docker container's working directory is /app
+const DATA_DIRECTORY = path.join(__dirname, "data");
+const DATA_FILENAME = path.join(DATA_DIRECTORY, "known_tickets.json");
 
 // Load known tickets from JSON file as objects
 function loadKnownTickets() {
@@ -23,8 +25,23 @@ function saveKnownTickets(knownTickets) {
 
 async function checkForNewTickets(url) {
     const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        headless: "new",  // Use the new headless mode for better performance
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--disable-extensions",
+            "--disable-background-networking",
+            "--disable-sync",
+            "--disable-default-apps",
+            "--disable-features=TranslateUI",
+            "--no-first-run",
+            "--no-zygote",
+            "--single-process",
+        ],
     });
 
     try {

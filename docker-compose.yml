@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  olyticket:
+    build: .
+    container_name: olyticket
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    command: npm start
