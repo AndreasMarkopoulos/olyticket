@@ -28,12 +28,15 @@ function saveKnownTickets(knownTickets) {
     console.log("File saved successfully!");
 }
 
+const proxyUrl = "http://3.124.133.93:3128"; // Replace with your proxy IP & Port
+
 async function checkForNewTickets(url) {
     console.log("Opening browser...");
     const browser = await puppeteer.launch({
         headless: "new",  // Use the new headless mode for better performance
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
         args: [
+            `--proxy-server=${proxyUrl}`,
             "--no-sandbox",
             "--disable-setuid-sandbox",
             "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
