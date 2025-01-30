@@ -1,0 +1,20 @@
+= Data Directory for Ticket Scraper
+
+This `data` directory is used to store persistent files related to the ticket scraping service.
+
+== Purpose
+
+* Stores `known_tickets.json`, which keeps track of previously scraped tickets.
+* Ensures that new ticket listings can be detected without duplicating old ones.
+* Helps maintain data persistence even when the application restarts.
+
+== Persistence on Fly.io
+
+* This directory is mounted as a *persistent volume* on Fly.io.
+* The volume ensures `known_tickets.json` is *not lost* when the container restarts.
+* Fly.io automatically attaches the volume to `/app/data`.
+
+== Important Notes
+
+* *Do not delete this directory* unless you want to reset the known ticket history.
+* If running locally, ensure the `data` directory exists before starting the application.
