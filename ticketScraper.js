@@ -61,6 +61,7 @@ async function checkForNewTickets(url) {
 
         const content = await page.content();
         const $ = cheerio.load(content);
+        console.log("html content:",$)
 
         const foundProducts = [];
         const productSelector = ".product, .productListItem, .clubTemplateSliderProduct";
