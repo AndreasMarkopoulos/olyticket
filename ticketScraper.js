@@ -65,6 +65,9 @@ async function checkForNewTickets(url) {
 
         const content = await page.content();
         console.log("Extracting content...");
+        // Save the page source
+        fs.writeFileSync("/app/data/page.html", content);
+        console.log("Saved page content to /app/data/page.html for debugging.");
 
         const $ = cheerio.load(content);
         console.log("Cheerio loaded the HTML!", $);
