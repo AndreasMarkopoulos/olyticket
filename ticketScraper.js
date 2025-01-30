@@ -14,7 +14,7 @@ const DATA_FILENAME = path.join(DATA_DIRECTORY, "known_tickets.json");
 function loadKnownTickets() {
     if (fs.existsSync(DATA_FILENAME)) {
         let fileContents = JSON.parse(fs.readFileSync(DATA_FILENAME, "utf8"))
-        console.log(fileContents)
+        console.log("Known tickets: ",fileContents)
         return fileContents;
     }
     return [];
@@ -80,6 +80,7 @@ async function checkForNewTickets(url) {
                 id
             })
         });
+        console.log("Found products:", foundProducts)
         return foundProducts;
     } finally {
         await browser.close();
