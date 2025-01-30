@@ -65,6 +65,15 @@ async function checkForNewTickets(url) {
 
     try {
         const page = await browser.newPage();
+        await page.evaluateOnNewDocument(() => {
+            Object.defineProperty(navigator, "webdriver", { get: () => false });
+        });
+        await page.evaluate(() => {
+            setInterval(() => {
+                window.dispatchEvent(new Event('mousemove'));
+                window.dispatchEvent(new Event('scroll'));
+            }, 3000);
+        });
         console.log(`Navigating to URL: ${url}`);
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
