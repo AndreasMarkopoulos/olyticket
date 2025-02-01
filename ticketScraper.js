@@ -18,6 +18,10 @@ function loadKnownTickets() {
     return [];
 }
 
+function delay(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
+}
+
 // Save known tickets to JSON file as objects
 function saveKnownTickets(knownTickets) {
     console.log("Saving known_tickets.json to:", DATA_FILENAME);
@@ -47,7 +51,9 @@ async function checkForNewTickets(url) {
     });
 
     try {
+        await delay(1000)   // Wait a bit due to race condition issues
         const page = await browser.newPage();
+        await delay(2000)
         console.log(`Navigating to URL: ${url}`);
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
