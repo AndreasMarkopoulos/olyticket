@@ -5,7 +5,7 @@ const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 const {sendMessage} = require("./telegramBot.js")
 
-let queueActive = false; // Global variable to track queue state
+let queueStates = {}; // Object to track queue state for each URL
 
 // --- Data storage for known tickets ---
 // Using /app/data if your Docker container's working directory is /app
@@ -70,14 +70,14 @@ async function checkForNewTickets(url) {
         // Check if the page redirects to a queue
         const currentUrl = page.url();
         if (currentUrl.includes("queue-it") || currentUrl.includes("waitingroom")) {
-            if (!queueActive) {
-                console.log("Queue detected for the first time! Sending alert...");
+            if (!queueStates[url]) {
+                console.log(`Queue detected for ${url}! Sending alert...`);
                 await sendMessage({
                     text: `🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.\n🔗 [Join Queue](${currentUrl})`
                 });
-                queueActive = true; // Set queue state to active
+                queueStates[url] = true; // Mark queue as active for this URL
             } else {
-                console.log("Queue still active. No duplicate message sent.");
+                console.log(`Queue still active for ${url}. No duplicate message sent.`);
             }
 
             await browser.close();
@@ -85,9 +85,9 @@ async function checkForNewTickets(url) {
         }
 
         // If no queue detected but was previously active, reset state
-        if (queueActive) {
-            console.log("Queue is no longer active. Resetting state.");
-            queueActive = false;
+        if (queueStates[url]) {
+            console.log(`Queue is no longer active for ${url}. Resetting state.`);
+            delete queueStates[url]; // Remove queue state for this URL
         }
 
         await page.waitForNetworkIdle();
