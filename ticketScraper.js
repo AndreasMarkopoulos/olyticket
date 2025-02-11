@@ -5,6 +5,8 @@ const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 const {sendMessage} = require("./telegramBot.js")
 
+let queueActive = false; // Global variable to track queue state
+
 // --- Data storage for known tickets ---
 // Using /app/data if your Docker container's working directory is /app
 const DATA_DIRECTORY = path.join(__dirname, "data");
@@ -31,12 +33,12 @@ function saveKnownTickets(knownTickets) {
 async function checkForNewTickets(url) {
     console.log("Opening browser...");
     const browser = await puppeteer.launch({
-        headless: "new",  // Use the new headless mode for better performance
+        headless: "new",
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",  // Prevents memory-related crashes in Docker
+            "--disable-dev-shm-usage",
             "--disable-gpu",
             "--disable-software-rasterizer",
             "--disable-extensions",
@@ -51,32 +53,58 @@ async function checkForNewTickets(url) {
     });
 
     try {
-        await delay(1000)   // Wait a bit due to race condition issues
+        await delay(1000);
         const page = await browser.newPage();
-        await delay(2000)
+        await delay(2000);
         console.log(`Navigating to URL: ${url}`);
+
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/111.0.0.0 Safari/537.36"
         );
 
-        await page.goto(url, { waitUntil: "networkidle2" });
+        // Go to the page
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+
+        // Check if the page redirects to a queue
+        const currentUrl = page.url();
+        if (currentUrl.includes("queue-it") || currentUrl.includes("waitingroom")) {
+            if (!queueActive) {
+                console.log("Queue detected for the first time! Sending alert...");
+                await sendMessage({
+                    text: `🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.\n🔗 [Join Queue](${currentUrl})`
+                });
+                queueActive = true; // Set queue state to active
+            } else {
+                console.log("Queue still active. No duplicate message sent.");
+            }
+
+            await browser.close();
+            return []; // Stop scraping since we're in a queue
+        }
+
+        // If no queue detected but was previously active, reset state
+        if (queueActive) {
+            console.log("Queue is no longer active. Resetting state.");
+            queueActive = false;
+        }
+
         await page.waitForNetworkIdle();
-
         const content = await page.content();
-
         const $ = cheerio.load(content);
 
         const foundProducts = [];
         const productSelector = ".product, .productListItem, .clubTemplateSliderProduct";
+
         $(productSelector).each((i, el) => {
-            const homeTeam = $(el).find(".productTeamsFirstTeam > span").text().trim()
-            const awayTeam = $(el).find(".productTeamsSecondTeam > span").text().trim()
-            const venue = $(el).find(".productVenue").text().trim()
-            const date = $(el).find(".productType").text().trim().replace(/\n\t+/g, '')
-            const link = url+$(el).find(".buyProductButton").attr('href')
-            const id = $(el).find(".buyProductButton").attr('id').split("_")[1]
+            const homeTeam = $(el).find(".productTeamsFirstTeam > span").text().trim();
+            const awayTeam = $(el).find(".productTeamsSecondTeam > span").text().trim();
+            const venue = $(el).find(".productVenue").text().trim();
+            const date = $(el).find(".productType").text().trim().replace(/\n\t+/g, '');
+            const link = url + $(el).find(".buyProductButton").attr('href');
+            const id = $(el).find(".buyProductButton").attr('id')?.split("_")[1] || `unknown-${i}`;
+
             foundProducts.push({
                 homeTeam,
                 awayTeam,
@@ -84,11 +112,13 @@ async function checkForNewTickets(url) {
                 date,
                 link,
                 id
-            })
+            });
         });
+
         return foundProducts;
     } catch (error) {
         console.error("Scraping error:", error);
+        return [];
     } finally {
         await browser.close();
     }
