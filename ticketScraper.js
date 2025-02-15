@@ -3,7 +3,7 @@ const path = require("path");
 require("dotenv").config();
 const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
-const {sendMessage} = require("./telegramBot.js")
+const {sendMessage, sendTicketAlert} = require("./telegramBot.js")
 
 let queueStates = {}; // Object to track queue state for each URL
 
@@ -72,9 +72,7 @@ async function checkForNewTickets(url) {
         if (currentUrl.includes("queue-it") || currentUrl.includes("waitingroom")) {
             if (!queueStates[url]) {
                 console.log(`Queue detected for ${url}! Sending alert...`);
-                await sendMessage({
-                    text: `🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.\n🔗 [Join Queue](${currentUrl})`
-                });
+                await sendMessage(`🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.`,currentUrl);
                 queueStates[url] = true; // Mark queue as active for this URL
             } else {
                 console.log(`Queue still active for ${url}. No duplicate message sent.`);
@@ -149,7 +147,7 @@ async function main() {
         const updatedKnown = [...knownTickets, ...newItems];
         saveKnownTickets(updatedKnown);
         for(const ticket of newItems) {
-            sendMessage(ticket)
+            sendTicketAlert(ticket)
         }
 
         console.log("New tickets detected and message sent.");
