@@ -46,8 +46,8 @@ This Node.js application periodically checks for new Olympiacos basketball and f
 
 1. **Clone this repository**:
    ```bash
-   git clone https://github.com/<your-username>/ticket-scraper.git
-   cd ticket-scraper
+   git clone https://github.com/AndreasMarkopoulos/olyticket.git
+   cd olyticket
    ```
 
 2. **Install dependencies**:
