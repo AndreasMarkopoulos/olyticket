@@ -67,12 +67,15 @@ async function checkForNewTickets(url) {
         // Go to the page
         await page.goto(url, { waitUntil: "domcontentloaded" });
 
+        await page.waitForNetworkIdle();
+        const content = await page.content();
+        const $ = cheerio.load(content);
+
         // Check if the page redirects to a queue
-        const currentUrl = page.url();
-        if (currentUrl.includes("queue-it") || currentUrl.includes("waitingroom")) {
+        if (!!$(".queueElement").length) {
             if (!queueStates[url]) {
                 console.log(`Queue detected for ${url}! Sending alert...`);
-                await sendMessage(`🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.`,currentUrl);
+                await sendMessage(`🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.`,url);
                 queueStates[url] = true; // Mark queue as active for this URL
             } else {
                 console.log(`Queue still active for ${url}. No duplicate message sent.`);
@@ -88,10 +91,6 @@ async function checkForNewTickets(url) {
             delete queueStates[url]; // Remove queue state for this URL
         }
 
-        await page.waitForNetworkIdle();
-        const content = await page.content();
-        const $ = cheerio.load(content);
-
         const foundProducts = [];
         const productSelector = ".product, .productListItem, .clubTemplateSliderProduct";
 
@@ -100,8 +99,8 @@ async function checkForNewTickets(url) {
             const awayTeam = $(el).find(".productTeamsSecondTeam > span").text().trim();
             const venue = $(el).find(".productVenue").text().trim();
             const date = $(el).find(".productType").text().trim().replace(/\n\t+/g, '');
-            const link = url + $(el).find(".buyProductButton").attr('href');
-            const id = $(el).find(".buyProductButton").attr('id')?.split("_")[1] || `unknown-${i}`;
+            const link = url + $(el).find(".productInnerRight > a").attr('href');
+            const id = $(el).find(".productInnerRight > a").attr('id')?.split("_")[1] || `unknown-${i}`;
 
             foundProducts.push({
                 homeTeam,

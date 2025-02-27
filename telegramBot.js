@@ -30,4 +30,5 @@ function sendMessage(message, link) {
 module.exports = {
     bot,
     sendMessage,
+    sendTicketAlert
 };
