@@ -5,7 +5,11 @@ const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 const {sendMessage, sendTicketAlert} = require("./telegramBot.js")
 
-let queueStates = {}; // Object to track queue state for each URL
+// Simple counter for each URL:
+// 0 = No queue has been seen yet
+// 3 = Queue was just detected, we sent a notification
+// 1-2 = Queue was detected before, and we've seen 1-2 checks without a queue
+let queueCounters = {};
 
 // --- Data storage for known tickets ---
 // Using /app/data if your Docker container's working directory is /app
@@ -71,24 +75,35 @@ async function checkForNewTickets(url) {
         const content = await page.content();
         const $ = cheerio.load(content);
 
+        // Initialize queue counter for this URL if not exists
+        if (queueCounters[url] === undefined) {
+            queueCounters[url] = 0; // 0 = no queue detected yet
+        }
+
         // Check if the page redirects to a queue
         if (!!$(".queueElement").length) {
-            if (!queueStates[url]) {
-                console.log(`Queue detected for ${url}! Sending alert...`);
-                await sendMessage(`🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.`,url);
-                queueStates[url] = true; // Mark queue as active for this URL
+            console.log(`Queue detected for ${url}`);
+
+            // If this is the first queue detection (counter = 0) or
+            // if queue reappears after 3 checks (counter = 0 again)
+            if (queueCounters[url] === 0) {
+                console.log(`Sending queue alert for ${url}...`);
+                await sendMessage(`🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.`, url);
+                queueCounters[url] = 3; // Set counter to 3 after sending notification
             } else {
-                console.log(`Queue still active for ${url}. No duplicate message sent.`);
+                // Queue was already detected before, no need to send notification
+                console.log(`Queue still active for ${url}. No duplicate message sent. Counter: ${queueCounters[url]}`);
             }
 
             await browser.close();
             return []; // Stop scraping since we're in a queue
-        }
-
-        // If no queue detected but was previously active, reset state
-        if (queueStates[url]) {
-            console.log(`Queue is no longer active for ${url}. Resetting state.`);
-            delete queueStates[url]; // Remove queue state for this URL
+        } else {
+            // No queue detected
+            if (queueCounters[url] > 0) {
+                // Previously saw a queue, decrease counter
+                queueCounters[url] -= 1;
+                console.log(`No queue detected for ${url}. Counter decreased to: ${queueCounters[url]}`);
+            }
         }
 
         const foundProducts = [];
@@ -177,4 +192,3 @@ async function main() {
         }
     }, intervalMs);
 })();
-
