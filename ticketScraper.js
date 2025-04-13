@@ -7,8 +7,8 @@ const {sendMessage, sendTicketAlert} = require("./telegramBot.js")
 
 // Simple counter for each URL:
 // 0 = No queue has been seen yet
-// 3 = Queue was just detected, we sent a notification
-// 1-2 = Queue was detected before, and we've seen 1-2 checks without a queue
+// 1-2 = Queue detected but fewer than 3 consecutive times
+// 3 = Queue detected 3 consecutive times, send notification
 let queueCounters = {};
 
 // --- Data storage for known tickets ---
@@ -84,25 +84,24 @@ async function checkForNewTickets(url) {
         if (!!$(".queueElement").length) {
             console.log(`Queue detected for ${url}`);
 
-            // If this is the first queue detection (counter = 0) or
-            // if queue reappears after 3 checks (counter = 0 again)
-            if (queueCounters[url] === 0) {
-                console.log(`Sending queue alert for ${url}...`);
+            // Increment the counter for consecutive queue detections
+            queueCounters[url] += 1;
+            console.log(`Queue counter for ${url} increased to: ${queueCounters[url]}`);
+
+            // Only send notification after 3 consecutive queue detections
+            if (queueCounters[url] === 3) {
+                console.log(`Sending queue alert for ${url} after 3 consecutive detections...`);
                 await sendMessage(`🚨 Queue detected on Ticketmaster! 🚨\nNew tickets may be releasing soon.`, url);
-                queueCounters[url] = 3; // Set counter to 3 after sending notification
-            } else {
-                // Queue was already detected before, no need to send notification
-                console.log(`Queue still active for ${url}. No duplicate message sent. Counter: ${queueCounters[url]}`);
+                // Keep counter at 3 to avoid sending duplicate notifications
             }
 
             await browser.close();
             return []; // Stop scraping since we're in a queue
         } else {
-            // No queue detected
+            // No queue detected, reset counter
             if (queueCounters[url] > 0) {
-                // Previously saw a queue, decrease counter
-                queueCounters[url] -= 1;
-                console.log(`No queue detected for ${url}. Counter decreased to: ${queueCounters[url]}`);
+                console.log(`No queue detected for ${url}. Resetting counter from ${queueCounters[url]} to 0.`);
+                queueCounters[url] = 0;
             }
         }
 
